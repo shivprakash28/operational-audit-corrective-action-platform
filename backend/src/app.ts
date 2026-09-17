@@ -3,12 +3,14 @@ import cors from "cors";
 import authRoutes from "./routes/auth.routes";
 import auditRoutes from "./routes/audit.routes";
 import assignmentRoutes from "./routes/assignment.routes";
+import checklistRoutes from "./routes/checklist.routes";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use("/api/audits", assignmentRoutes);
+app.use("/api/checklists", checklistRoutes);
 
 app.get("/api/health", (_req, res) => {
   res.json({
