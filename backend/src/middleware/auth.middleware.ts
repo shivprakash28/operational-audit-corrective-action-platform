@@ -4,7 +4,7 @@ import { env } from "../config/env";
 
 export interface AuthRequest extends Request {
   user?: {
-    id: string;
+    id: number;
     role: string;
   };
 }
@@ -26,7 +26,7 @@ export const authenticate = (
 
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET) as {
-      id: string;
+      id: number;
       role: string;
     };
 
