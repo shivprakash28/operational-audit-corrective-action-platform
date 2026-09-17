@@ -1,0 +1,270 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  AUDITOR
+  DEPARTMENT_OWNER
+  MANAGEMENT
+}
+
+enum AuditStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ChecklistResponseStatus {
+  COMPLIANT
+  NON_COMPLIANT
+  NA
+}
+
+enum FindingSeverity {
+  MINOR
+  MAJOR
+  CRITICAL
+}
+
+enum FindingStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum CorrectiveActionStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  VERIFIED
+  CLOSED
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole
+  departmentId Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  department        Department?       @relation(fields: [departmentId], references: [id])
+  auditsCreated     Audit[]           @relation("AuditCreator")
+  assignments       AuditAssignment[]
+  observations      Observation[]     @relation("ObservationCreator")
+  findings          Finding[]         @relation("FindingOwner")
+  correctiveActions CorrectiveAction[] @relation("ActionOwner")
+  evidence          Evidence[]
+  verifications     Verification[]    @relation("Verifier")
+}
+
+model Department {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users   User[]
+  audits  Audit[]
+  findings Finding[]
+}
+
+model Audit {
+  id                  Int        @id @default(autoincrement())
+  title               String
+  scope               String
+  objectives          String
+  criteria            String
+  plannedStartDate    DateTime
+  plannedEndDate      DateTime
+  expectedCompletionDate DateTime?
+  status              AuditStatus @default(PLANNED)
+  departmentId        Int
+  createdById         Int
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  department    Department        @relation(fields: [departmentId], references: [id])
+  createdBy     User              @relation("AuditCreator", fields: [createdById], references: [id])
+  assignments   AuditAssignment[]
+  checklists    AuditChecklist[]
+  observations  Observation[]
+  findings      Finding[]
+
+  @@index([departmentId])
+  @@index([createdById])
+  @@index([status])
+}
+
+model AuditAssignment {
+  id        Int      @id @default(autoincrement())
+  auditId   Int
+  auditorId Int
+  assignedAt DateTime @default(now())
+
+  audit   Audit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  auditor User  @relation(fields: [auditorId], references: [id], onDelete: Cascade)
+
+  @@unique([auditId, auditorId])
+  @@index([auditorId])
+}
+
+model ChecklistTemplate {
+  id        Int      @id @default(autoincrement())
+  name      String
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items     ChecklistItem[]
+  audits    AuditChecklist[]
+}
+
+model ChecklistItem {
+  id          Int      @id @default(autoincrement())
+  templateId  Int
+  question    String
+  description String?
+  order       Int
+
+  template    ChecklistTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  responses   ChecklistResponse[]
+  observations Observation[]
+
+  @@index([templateId])
+}
+
+model AuditChecklist {
+  id          Int      @id @default(autoincrement())
+  auditId     Int
+  templateId  Int
+  assignedAt  DateTime @default(now())
+
+  audit       Audit             @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  template    ChecklistTemplate @relation(fields: [templateId], references: [id])
+  responses   ChecklistResponse[]
+
+  @@unique([auditId, templateId])
+}
+
+model ChecklistResponse {
+  id              Int                     @id @default(autoincrement())
+  auditChecklistId Int
+  checklistItemId Int
+  status          ChecklistResponseStatus
+  remarks         String?
+  respondedAt     DateTime                @default(now())
+
+  auditChecklist AuditChecklist @relation(fields: [auditChecklistId], references: [id], onDelete: Cascade)
+  checklistItem  ChecklistItem  @relation(fields: [checklistItemId], references: [id], onDelete: Cascade)
+
+  @@unique([auditChecklistId, checklistItemId])
+}
+
+model Observation {
+  id              Int      @id @default(autoincrement())
+  auditId         Int
+  checklistItemId Int
+  description     String
+  evidenceUrl     String?
+  createdById     Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  audit         Audit         @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  checklistItem ChecklistItem @relation(fields: [checklistItemId], references: [id])
+  createdBy     User          @relation("ObservationCreator", fields: [createdById], references: [id])
+  finding       Finding?
+
+  @@index([auditId])
+  @@index([checklistItemId])
+}
+
+model Finding {
+  id               Int            @id @default(autoincrement())
+  auditId          Int
+  observationId    Int            @unique
+  severity         FindingSeverity
+  responsibleDepartmentId Int
+  ownerId          Int?
+  status           FindingStatus  @default(OPEN)
+  description      String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  audit                 Audit       @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  observation           Observation @relation(fields: [observationId], references: [id])
+  responsibleDepartment Department  @relation(fields: [responsibleDepartmentId], references: [id])
+  owner                 User?       @relation("FindingOwner", fields: [ownerId], references: [id])
+  correctiveActions     CorrectiveAction[]
+
+  @@index([auditId])
+  @@index([severity])
+  @@index([status])
+}
+
+model CorrectiveAction {
+  id          Int                   @id @default(autoincrement())
+  findingId   Int
+  title       String
+  description String
+  ownerId     Int
+  dueDate     DateTime
+  status      CorrectiveActionStatus @default(OPEN)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  finding       Finding        @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  owner         User           @relation("ActionOwner", fields: [ownerId], references: [id])
+  evidence      Evidence[]
+  verifications Verification[]
+
+  @@index([findingId])
+  @@index([ownerId])
+  @@index([status])
+}
+
+model Evidence {
+  id                Int      @id @default(autoincrement())
+  correctiveActionId Int
+  uploadedById      Int
+  fileName          String
+  fileUrl           String
+  uploadedAt        DateTime @default(now())
+
+  correctiveAction CorrectiveAction @relation(fields: [correctiveActionId], references: [id], onDelete: Cascade)
+  uploadedBy       User             @relation(fields: [uploadedById], references: [id])
+
+  @@index([correctiveActionId])
+}
+
+model Verification {
+  id                  Int                @id @default(autoincrement())
+  correctiveActionId  Int
+  verifierId          Int
+  status              VerificationStatus @default(PENDING)
+  comments            String?
+  verifiedAt          DateTime?
+
+  correctiveAction CorrectiveAction @relation(fields: [correctiveActionId], references: [id], onDelete: Cascade)
+  verifier         User             @relation("Verifier", fields: [verifierId], references: [id])
+
+  @@index([correctiveActionId])
+  @@index([verifierId])
+}
