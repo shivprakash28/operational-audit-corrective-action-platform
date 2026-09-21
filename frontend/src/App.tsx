@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import Login from "./pages/Login";
 import Audits from "./pages/Audits";
 import Assignments from "./pages/Assignments";
+import Checklists from "./pages/Checklists";
 
 import { useAuth } from "./context/AuthContext";
 
@@ -81,6 +82,25 @@ const App = () => {
 
                 <main className="content">
                   <Assignments />
+                </main>
+              </div>
+            </div>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/checklists"
+        element={
+          <ProtectedRoute>
+            <div className="app-layout">
+              <Sidebar />
+
+              <div className="main-area">
+                <Header />
+
+                <main className="content">
+                  <Checklists />
                 </main>
               </div>
             </div>
