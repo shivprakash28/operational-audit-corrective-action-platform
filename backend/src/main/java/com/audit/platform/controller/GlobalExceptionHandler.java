@@ -69,4 +69,14 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
+
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, String>> handleMessageNotReadable(
+            org.springframework.http.converter.HttpMessageNotReadableException ex
+    ) {
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Invalid request body or status value");
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
 }
