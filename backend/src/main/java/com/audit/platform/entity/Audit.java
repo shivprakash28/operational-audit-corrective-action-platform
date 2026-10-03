@@ -1,6 +1,8 @@
 package com.audit.platform.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
 import java.time.LocalDateTime;
 
@@ -33,6 +35,7 @@ public class Audit {
     private LocalDateTime expectedCompletionDate;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @Column(nullable = false, columnDefinition = "AuditStatus")
     private AuditStatus status = AuditStatus.PLANNED;
 

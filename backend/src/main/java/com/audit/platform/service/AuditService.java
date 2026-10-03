@@ -42,7 +42,7 @@ public class AuditService {
     public AuditResponse getAuditById(Long id) {
         Audit audit = auditRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Audit not found with id: " + id)
+                        new java.util.NoSuchElementException("Audit not found with id: " + id)
                 );
 
         return toResponse(audit);
@@ -52,14 +52,14 @@ public class AuditService {
 
         Department department = departmentRepository.findById(request.getDepartmentId())
                 .orElseThrow(() ->
-                        new RuntimeException(
+                        new IllegalArgumentException(
                                 "Department not found with id: " + request.getDepartmentId()
                         )
                 );
 
         User createdBy = userRepository.findById(request.getCreatedById())
                 .orElseThrow(() ->
-                        new RuntimeException(
+                        new IllegalArgumentException(
                                 "User not found with id: " + request.getCreatedById()
                         )
                 );
@@ -94,19 +94,19 @@ public class AuditService {
 
         Audit audit = auditRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Audit not found with id: " + id)
+                        new java.util.NoSuchElementException("Audit not found with id: " + id)
                 );
 
         Department department = departmentRepository.findById(request.getDepartmentId())
                 .orElseThrow(() ->
-                        new RuntimeException(
+                        new IllegalArgumentException(
                                 "Department not found with id: " + request.getDepartmentId()
                         )
                 );
 
         User createdBy = userRepository.findById(request.getCreatedById())
                 .orElseThrow(() ->
-                        new RuntimeException(
+                        new IllegalArgumentException(
                                 "User not found with id: " + request.getCreatedById()
                         )
                 );
@@ -135,7 +135,7 @@ public class AuditService {
     public void deleteAudit(Long id) {
 
         if (!auditRepository.existsById(id)) {
-            throw new RuntimeException("Audit not found with id: " + id);
+            throw new java.util.NoSuchElementException("Audit not found with id: " + id);
         }
 
         auditRepository.deleteById(id);

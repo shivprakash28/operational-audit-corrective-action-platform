@@ -41,7 +41,7 @@ public class AuditController {
     ) {
         try {
             return ResponseEntity.ok(auditService.getAuditById(id));
-        } catch (RuntimeException e) {
+        } catch (java.util.NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         }
     }
@@ -55,7 +55,7 @@ public class AuditController {
             return ResponseEntity.ok(
                     auditService.updateAudit(id, request)
             );
-        } catch (RuntimeException e) {
+        } catch (java.util.NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         }
     }
@@ -67,7 +67,7 @@ public class AuditController {
         try {
             auditService.deleteAudit(id);
             return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
+        } catch (java.util.NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         }
     }
