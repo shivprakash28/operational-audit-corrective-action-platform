@@ -1,10 +1,17 @@
 package com.audit.platform.service;
 
+import com.audit.platform.dto.AuditRequest;
 import com.audit.platform.dto.AuditResponse;
 import com.audit.platform.entity.Audit;
+import com.audit.platform.entity.Department;
+import com.audit.platform.entity.User;
 import com.audit.platform.repository.AuditRepository;
+import com.audit.platform.repository.DepartmentRepository;
+import com.audit.platform.repository.UserRepository;
+
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -12,9 +19,17 @@ import java.util.stream.Collectors;
 public class AuditService {
 
     private final AuditRepository auditRepository;
+    private final DepartmentRepository departmentRepository;
+    private final UserRepository userRepository;
 
-    public AuditService(AuditRepository auditRepository) {
+    public AuditService(
+            AuditRepository auditRepository,
+            DepartmentRepository departmentRepository,
+            UserRepository userRepository
+    ) {
         this.auditRepository = auditRepository;
+        this.departmentRepository = departmentRepository;
+        this.userRepository = userRepository;
     }
 
     public List<AuditResponse> getAllAudits() {
@@ -31,6 +46,99 @@ public class AuditService {
                 );
 
         return toResponse(audit);
+    }
+
+    public AuditResponse createAudit(AuditRequest request) {
+
+        Department department = departmentRepository.findById(request.getDepartmentId())
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Department not found with id: " + request.getDepartmentId()
+                        )
+                );
+
+        User createdBy = userRepository.findById(request.getCreatedById())
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "User not found with id: " + request.getCreatedById()
+                        )
+                );
+
+        Audit audit = new Audit();
+
+        audit.setTitle(request.getTitle());
+        audit.setScope(request.getScope());
+        audit.setObjectives(request.getObjectives());
+        audit.setCriteria(request.getCriteria());
+        audit.setPlannedStartDate(request.getPlannedStartDate());
+        audit.setPlannedEndDate(request.getPlannedEndDate());
+        audit.setExpectedCompletionDate(request.getExpectedCompletionDate());
+
+        if (request.getStatus() != null) {
+            audit.setStatus(request.getStatus());
+        }
+
+        audit.setDepartment(department);
+        audit.setCreatedBy(createdBy);
+
+        LocalDateTime now = LocalDateTime.now();
+        audit.setCreatedAt(now);
+        audit.setUpdatedAt(now);
+
+        Audit savedAudit = auditRepository.save(audit);
+
+        return toResponse(savedAudit);
+    }
+
+    public AuditResponse updateAudit(Long id, AuditRequest request) {
+
+        Audit audit = auditRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Audit not found with id: " + id)
+                );
+
+        Department department = departmentRepository.findById(request.getDepartmentId())
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Department not found with id: " + request.getDepartmentId()
+                        )
+                );
+
+        User createdBy = userRepository.findById(request.getCreatedById())
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "User not found with id: " + request.getCreatedById()
+                        )
+                );
+
+        audit.setTitle(request.getTitle());
+        audit.setScope(request.getScope());
+        audit.setObjectives(request.getObjectives());
+        audit.setCriteria(request.getCriteria());
+        audit.setPlannedStartDate(request.getPlannedStartDate());
+        audit.setPlannedEndDate(request.getPlannedEndDate());
+        audit.setExpectedCompletionDate(request.getExpectedCompletionDate());
+
+        if (request.getStatus() != null) {
+            audit.setStatus(request.getStatus());
+        }
+
+        audit.setDepartment(department);
+        audit.setCreatedBy(createdBy);
+        audit.setUpdatedAt(LocalDateTime.now());
+
+        Audit updatedAudit = auditRepository.save(audit);
+
+        return toResponse(updatedAudit);
+    }
+
+    public void deleteAudit(Long id) {
+
+        if (!auditRepository.existsById(id)) {
+            throw new RuntimeException("Audit not found with id: " + id);
+        }
+
+        auditRepository.deleteById(id);
     }
 
     private AuditResponse toResponse(Audit audit) {
