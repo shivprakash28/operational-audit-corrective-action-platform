@@ -1,6 +1,8 @@
 package com.audit.platform.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
 import java.time.LocalDateTime;
 
@@ -30,6 +32,7 @@ public class CorrectiveAction {
     private LocalDateTime dueDate;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @Column(nullable = false, columnDefinition = "CorrectiveActionStatus")
     private CorrectiveActionStatus status = CorrectiveActionStatus.OPEN;
 
