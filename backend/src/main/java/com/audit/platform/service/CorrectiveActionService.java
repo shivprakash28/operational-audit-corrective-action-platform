@@ -89,6 +89,19 @@ public class CorrectiveActionService {
     }
 
     @Transactional(readOnly = true)
+    public List<CorrectiveActionResponse> getOverdueCorrectiveActions() {
+        List<CorrectiveActionStatus> excluded = List.of(
+                CorrectiveActionStatus.COMPLETED,
+                CorrectiveActionStatus.VERIFIED,
+                CorrectiveActionStatus.CLOSED
+        );
+        return correctiveActionRepository.findOverdueActions(LocalDateTime.now(), excluded)
+                .stream()
+                .map(CorrectiveActionResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public CorrectiveActionResponse getCorrectiveActionById(Long id) {
         CorrectiveAction correctiveAction = correctiveActionRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new NoSuchElementException("Corrective action not found with id: " + id));

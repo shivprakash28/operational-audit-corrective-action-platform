@@ -54,6 +54,11 @@ public class CorrectiveActionController {
         return ResponseEntity.ok(correctiveActionService.getAllCorrectiveActions());
     }
 
+    @GetMapping("/api/corrective-actions/overdue")
+    public ResponseEntity<List<CorrectiveActionResponse>> getOverdueCorrectiveActions() {
+        return ResponseEntity.ok(correctiveActionService.getOverdueCorrectiveActions());
+    }
+
     @GetMapping("/api/findings/{findingId}/corrective-actions/{id}")
     public ResponseEntity<CorrectiveActionResponse> getCorrectiveActionByIdForFinding(
             @PathVariable Long findingId,

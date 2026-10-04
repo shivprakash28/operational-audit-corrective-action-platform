@@ -195,6 +195,16 @@ class CorrectiveActionServiceTest {
     }
 
     @Test
+    void getOverdueCorrectiveActions_Success() {
+        when(correctiveActionRepository.findOverdueActions(any(LocalDateTime.class), any())).thenReturn(List.of(testCorrectiveAction));
+
+        List<CorrectiveActionResponse> result = correctiveActionService.getOverdueCorrectiveActions();
+
+        assertEquals(1, result.size());
+        assertEquals(100L, result.get(0).getId());
+    }
+
+    @Test
     void getCorrectiveActionById_Success() {
         when(correctiveActionRepository.findByIdWithDetails(100L)).thenReturn(Optional.of(testCorrectiveAction));
 
