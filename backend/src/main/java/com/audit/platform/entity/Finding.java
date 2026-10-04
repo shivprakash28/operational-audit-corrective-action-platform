@@ -1,6 +1,8 @@
 package com.audit.platform.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
 import java.time.LocalDateTime;
 
@@ -26,6 +28,7 @@ public class Finding {
     private Observation observation;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @Column(nullable = false, columnDefinition = "FindingSeverity")
     private FindingSeverity severity;
 
@@ -38,6 +41,7 @@ public class Finding {
     private User owner;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @Column(nullable = false, columnDefinition = "FindingStatus")
     private FindingStatus status = FindingStatus.OPEN;
 
