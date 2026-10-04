@@ -39,11 +39,7 @@ public class AuditController {
     public ResponseEntity<AuditResponse> getAuditById(
             @PathVariable Long id
     ) {
-        try {
-            return ResponseEntity.ok(auditService.getAuditById(id));
-        } catch (java.util.NoSuchElementException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(auditService.getAuditById(id));
     }
 
     @PutMapping("/{id}")
@@ -51,24 +47,16 @@ public class AuditController {
             @PathVariable Long id,
             @Valid @RequestBody AuditRequest request
     ) {
-        try {
-            return ResponseEntity.ok(
-                    auditService.updateAudit(id, request)
-            );
-        } catch (java.util.NoSuchElementException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(
+                auditService.updateAudit(id, request)
+        );
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAudit(
             @PathVariable Long id
     ) {
-        try {
-            auditService.deleteAudit(id);
-            return ResponseEntity.noContent().build();
-        } catch (java.util.NoSuchElementException e) {
-            return ResponseEntity.notFound().build();
-        }
+        auditService.deleteAudit(id);
+        return ResponseEntity.noContent().build();
     }
 }

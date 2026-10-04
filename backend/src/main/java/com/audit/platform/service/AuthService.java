@@ -29,14 +29,14 @@ public class AuthService {
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() ->
-                        new RuntimeException("Invalid email or password")
+                        new IllegalArgumentException("Invalid email or password")
                 );
 
         if (!passwordEncoder.matches(
                 request.getPassword(),
                 user.getPassword()
         )) {
-            throw new RuntimeException("Invalid email or password");
+            throw new IllegalArgumentException("Invalid email or password");
         }
 
         String token = jwtService.generateToken(
