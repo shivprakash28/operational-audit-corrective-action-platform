@@ -1,6 +1,8 @@
 package com.audit.platform.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
 import java.time.LocalDateTime;
 
@@ -21,6 +23,7 @@ public class Verification {
     private User verifier;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @Column(nullable = false, columnDefinition = "VerificationStatus")
     private VerificationStatus status = VerificationStatus.PENDING;
 
