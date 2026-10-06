@@ -1,15 +1,34 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import api from "../services/api";
+import Button from "../components/ui/Button";
+import Card, { CardContent } from "../components/ui/Card";
+import AssignmentStats from "../components/assignments/AssignmentStats";
+import AssignmentAuditSelector from "../components/assignments/AssignmentAuditSelector";
+import AssignmentTable from "../components/assignments/AssignmentTable";
+import AssignmentFormModal from "../components/assignments/AssignmentFormModal";
+import { UserCheck, Plus, RefreshCw, AlertCircle, CheckCircle2, Users } from "lucide-react";
 
-interface Audit {
+export interface Audit {
   id: number;
   title: string;
+  scope?: string;
+  departmentId: number;
+  departmentName?: string;
+  status?: string;
+  plannedStartDate?: string;
+  plannedEndDate?: string;
 }
 
-interface Assignment {
+export interface Assignment {
   id: number;
   auditId: number;
   auditorId: number;
+  auditorName?: string;
+  auditorEmail?: string;
+  auditorRole?: string;
+  auditorDepartmentId?: number;
+  auditorDepartmentName?: string;
+  assignedAt?: string;
   auditor?: {
     id: number;
     email: string;
@@ -17,227 +36,282 @@ interface Assignment {
   };
 }
 
-const Assignments = () => {
+export const Assignments: React.FC = () => {
   const [audits, setAudits] = useState<Audit[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [selectedAuditId, setSelectedAuditId] = useState("");
-  const [auditorId, setAuditorId] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [loadingAssignments, setLoadingAssignments] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [selectedAuditId, setSelectedAuditId] = useState<string>("");
 
-  useEffect(() => {
-    const fetchAudits = async () => {
-      try {
-        const response = await api.get("/audits");
+  const [loadingAudits, setLoadingAudits] = useState<boolean>(true);
+  const [loadingAssignments, setLoadingAssignments] = useState<boolean>(false);
+  const [auditError, setAuditError] = useState<string>("");
+  const [assignmentError, setAssignmentError] = useState<string>("");
+  const [toastMessage, setToastMessage] = useState<string>("");
 
-        const data = response.data;
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
 
-        if (Array.isArray(data)) {
-          setAudits(data);
-        } else if (Array.isArray(data.audits)) {
-          setAudits(data.audits);
-        } else if (Array.isArray(data.data)) {
-          setAudits(data.data);
-        } else {
-          setAudits([]);
-        }
-      } catch (err: any) {
-        console.error("Failed to fetch audits:", err);
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage("");
+    }, 4000);
+  };
 
-        setError(
-          err.response?.data?.message ||
-            "Failed to load audits. Please try again."
-        );
-      } finally {
-        setLoading(false);
+  // Fetch all available audits
+  const fetchAudits = useCallback(async () => {
+    setLoadingAudits(true);
+    setAuditError("");
+    try {
+      const response = await api.get("/audits");
+      const data = response.data;
+
+      let list: Audit[] = [];
+      if (Array.isArray(data)) {
+        list = data;
+      } else if (Array.isArray(data.audits)) {
+        list = data.audits;
+      } else if (Array.isArray(data.data)) {
+        list = data.data;
       }
-    };
 
-    fetchAudits();
-  }, []);
+      setAudits(list);
+      if (list.length > 0 && !selectedAuditId) {
+        setSelectedAuditId(list[0].id.toString());
+      }
+    } catch (err: any) {
+      console.error("Failed to fetch audits:", err);
+      setAuditError(
+        err?.response?.data?.message || "Unable to load audits. Please try again."
+      );
+    } finally {
+      setLoadingAudits(false);
+    }
+  }, [selectedAuditId]);
 
-  const fetchAssignments = async (auditId: string) => {
+  // Fetch assignments for selected audit
+  const fetchAssignments = useCallback(async (auditId: string) => {
     if (!auditId) {
       setAssignments([]);
       return;
     }
-
     setLoadingAssignments(true);
-    setError("");
-
+    setAssignmentError("");
     try {
-      const response = await api.get(
-        `/audits/${auditId}/assignments`
-      );
-
+      const response = await api.get(`/audits/${auditId}/assignments`);
       const data = response.data;
 
+      let list: Assignment[] = [];
       if (Array.isArray(data)) {
-        setAssignments(data);
+        list = data;
       } else if (Array.isArray(data.assignments)) {
-        setAssignments(data.assignments);
+        list = data.assignments;
       } else if (Array.isArray(data.data)) {
-        setAssignments(data.data);
-      } else {
-        setAssignments([]);
+        list = data.data;
       }
+
+      setAssignments(list);
     } catch (err: any) {
       console.error("Failed to fetch assignments:", err);
-
-      setError(
-        err.response?.data?.message ||
-          "Failed to load assignments. Please try again."
+      setAssignmentError(
+        err?.response?.data?.message ||
+          "Failed to load assignments for selected audit."
       );
     } finally {
       setLoadingAssignments(false);
     }
-  };
+  }, []);
 
-  const handleAuditChange = (
-    event: React.ChangeEvent<HTMLSelectElement>
-  ) => {
-    const auditId = event.target.value;
+  useEffect(() => {
+    fetchAudits();
+  }, [fetchAudits]);
 
+  useEffect(() => {
+    if (selectedAuditId) {
+      fetchAssignments(selectedAuditId);
+    } else {
+      setAssignments([]);
+    }
+  }, [selectedAuditId, fetchAssignments]);
+
+  const handleSelectAudit = (auditId: string) => {
     setSelectedAuditId(auditId);
-    setSuccess("");
-    setError("");
-
-    fetchAssignments(auditId);
   };
 
-  const handleAssign = async (
-    event: React.FormEvent<HTMLFormElement>
-  ) => {
-    event.preventDefault();
-
-    setError("");
-    setSuccess("");
-
-    if (!selectedAuditId) {
-      setError("Please select an audit.");
-      return;
-    }
-
-    if (!auditorId) {
-      setError("Please enter an auditor ID.");
-      return;
-    }
-
+  const handleAssignAuditor = async (auditId: string, auditorId: number) => {
+    setSubmitting(true);
     try {
-      await api.post(
-        `/audits/${selectedAuditId}/assign`,
-        {
-          auditorId: Number(auditorId),
-        }
-      );
+      await api.post(`/audits/${auditId}/assign`, {
+        auditorId,
+      });
 
-      setSuccess("Auditor assigned successfully.");
-      setAuditorId("");
+      showToast("Auditor assigned successfully.");
 
-      await fetchAssignments(selectedAuditId);
-    } catch (err: any) {
-      console.error("Failed to assign auditor:", err);
-
-      setError(
-        err.response?.data?.message ||
-          "Failed to assign auditor. Please try again."
-      );
+      if (auditId === selectedAuditId) {
+        await fetchAssignments(auditId);
+      } else {
+        setSelectedAuditId(auditId);
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  if (loading) {
-    return <p>Loading audits...</p>;
-  }
+  const selectedAuditObj =
+    audits.find((a) => a.id.toString() === selectedAuditId) || null;
 
   return (
-    <div>
-      <h2>Auditor Assignment</h2>
-
-      <h3>Assign Auditor</h3>
-
-      <form onSubmit={handleAssign}>
-        <div>
-          <label htmlFor="auditId">Select Audit</label>
-          <br />
-
-          <select
-            id="auditId"
-            value={selectedAuditId}
-            onChange={handleAuditChange}
-            required
-          >
-            <option value="">Select an audit</option>
-
-            {audits.map((audit) => (
-              <option key={audit.id} value={audit.id}>
-                #{audit.id} - {audit.title}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <br />
-
-        <div>
-          <label htmlFor="auditorId">Auditor ID</label>
-          <br />
-
-          <input
-            id="auditorId"
-            type="number"
-            min="1"
-            value={auditorId}
-            onChange={(event) => setAuditorId(event.target.value)}
-            placeholder="Enter auditor ID"
-            required
-          />
-        </div>
-
-        <br />
-
-        <button type="submit">Assign Auditor</button>
-      </form>
-
-      {success && <p>{success}</p>}
-
-      {error && <p>{error}</p>}
-
-      <hr />
-
-      <h3>Current Assignments</h3>
-
-      {!selectedAuditId ? (
-        <p>Select an audit to view assignments.</p>
-      ) : loadingAssignments ? (
-        <p>Loading assignments...</p>
-      ) : assignments.length === 0 ? (
-        <p>No auditors assigned to this audit.</p>
-      ) : (
-        <div>
-          {assignments.map((assignment) => (
-            <div key={assignment.id}>
-              <p>
-                <strong>Assignment ID:</strong> {assignment.id}
-              </p>
-
-              <p>
-                <strong>Auditor ID:</strong> {assignment.auditorId}
-              </p>
-
-              {assignment.auditor && (
-                <p>
-                  <strong>Auditor:</strong>{" "}
-                  {assignment.auditor.email}
-                </p>
-              )}
-
-              <hr />
-            </div>
-          ))}
+    <div className="space-y-6">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg border border-slate-700 flex items-center gap-2.5 animate-bounce-short">
+          <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+          <span className="text-sm font-medium">{toastMessage}</span>
         </div>
       )}
+
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+            Auditor Assignments
+          </h2>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Assign auditors to audits and manage audit responsibilities.
+          </p>
+        </div>
+
+        <Button
+          variant="primary"
+          onClick={() => setIsModalOpen(true)}
+          className="gap-2 self-start sm:self-auto"
+        >
+          <Plus className="h-4 w-4" />
+          Assign Auditor
+        </Button>
+      </div>
+
+      {/* Assignment Overview Statistics */}
+      <AssignmentStats
+        auditsCount={audits.length}
+        selectedAudit={selectedAuditObj}
+        assignments={assignments}
+      />
+
+      {/* Target Audit Selector */}
+      {loadingAudits ? (
+        <Card className="p-4 animate-pulse">
+          <div className="h-5 w-48 bg-slate-200 rounded" />
+        </Card>
+      ) : auditError ? (
+        <Card className="border-rose-200 bg-rose-50/50">
+          <CardContent className="p-4 flex items-center justify-between text-rose-700 text-sm">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-rose-600" />
+              <span>{auditError}</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={fetchAudits}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <AssignmentAuditSelector
+          audits={audits}
+          selectedAuditId={selectedAuditId}
+          onSelectAudit={handleSelectAudit}
+          selectedAudit={selectedAuditObj}
+        />
+      )}
+
+      {/* Assignment Table / List Section */}
+      {!selectedAuditId ? (
+        <Card className="border-dashed border-2 border-slate-200 bg-slate-50/50">
+          <CardContent className="p-12 text-center space-y-3">
+            <div className="mx-auto w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+              <UserCheck className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-800">
+              No audit selected
+            </h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              Select an audit from the dropdown above to view assigned team members or assign new auditors.
+            </p>
+          </CardContent>
+        </Card>
+      ) : loadingAssignments ? (
+        <Card className="p-8 text-center animate-pulse space-y-3">
+          <div className="h-6 w-48 bg-slate-200 rounded mx-auto" />
+          <div className="h-4 w-64 bg-slate-200 rounded mx-auto" />
+        </Card>
+      ) : assignmentError ? (
+        <Card className="max-w-xl mx-auto border-rose-200 bg-rose-50/50">
+          <CardContent className="p-8 text-center space-y-4">
+            <div className="mx-auto w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">
+                Unable to load assignments
+              </h3>
+              <p className="text-sm text-slate-600 mt-1">{assignmentError}</p>
+            </div>
+            <div className="pt-2 flex justify-center">
+              <Button
+                variant="primary"
+                onClick={() => fetchAssignments(selectedAuditId)}
+                className="gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Retry
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : assignments.length === 0 ? (
+        <Card className="border-dashed border-2 border-slate-200 bg-slate-50/50">
+          <CardContent className="p-12 text-center space-y-4">
+            <div className="mx-auto w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+              <Users className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-slate-800">
+                No auditors assigned
+              </h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                Assign an auditor to begin managing responsibilities for this audit.
+              </p>
+            </div>
+            <Button
+              variant="primary"
+              onClick={() => setIsModalOpen(true)}
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Assign Auditor
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+              Assigned Auditors ({assignments.length})
+            </h3>
+          </div>
+          <AssignmentTable assignments={assignments} />
+        </div>
+      )}
+
+      {/* Assign Auditor Form Modal */}
+      <AssignmentFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleAssignAuditor}
+        audits={audits}
+        defaultAuditId={selectedAuditId}
+        loading={submitting}
+      />
     </div>
   );
 };

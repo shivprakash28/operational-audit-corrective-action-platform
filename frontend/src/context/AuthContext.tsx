@@ -9,6 +9,16 @@ import api from "../services/api";
 
 interface User {
   id: number;
+  name: string;
+  email: string;
+  role: string;
+}
+
+interface LoginResponse {
+  token: string;
+  userId: number;
+  name: string;
+  email: string;
   role: string;
 }
 
@@ -35,49 +45,50 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
 
-    if (!storedToken) {
-      setLoading(false);
-      return;
-    }
-
-    api
-      .get("/auth/profile")
-      .then((response) => {
-        setUser(response.data.user);
-      })
-      .catch(() => {
+    if (storedToken && storedUser) {
+      try {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+      } catch {
         localStorage.removeItem("token");
+        localStorage.removeItem("user");
         setToken(null);
         setUser(null);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      }
+    }
+
+    setLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await api.post("/auth/login", {
+    const response = await api.post<LoginResponse>("/auth/login", {
       email,
       password,
     });
 
-    const newToken = response.data.token;
+    const data = response.data;
 
-    localStorage.setItem("token", newToken);
-    setToken(newToken);
+    localStorage.setItem("token", data.token);
 
-    const profileResponse = await api.get("/auth/profile", {
-      headers: {
-        Authorization: `Bearer ${newToken}`,
-      },
-    });
+    const loggedInUser: User = {
+      id: data.userId,
+      name: data.name,
+      email: data.email,
+      role: data.role,
+    };
 
-    setUser(profileResponse.data.user);
+    localStorage.setItem("user", JSON.stringify(loggedInUser));
+
+    setToken(data.token);
+    setUser(loggedInUser);
   };
 
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
     setToken(null);
     setUser(null);
   };

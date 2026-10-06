@@ -1,41 +1,19 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
 import Audits from "./pages/Audits";
 import Assignments from "./pages/Assignments";
 import Checklists from "./pages/Checklists";
+import Observations from "./pages/Observations";
+import Findings from "./pages/Findings";
+import CorrectiveActions from "./pages/CorrectiveActions";
+import Evidence from "./pages/Evidence";
+import Verification from "./pages/Verification";
+import Settings from "./pages/Settings";
 
-import { useAuth } from "./context/AuthContext";
-
-import Sidebar from "./components/Sidebar";
-import Header from "./components/Header";
 import ProtectedRoute from "./components/ProtectedRoute";
-
-const Dashboard = () => {
-  const { user } = useAuth();
-
-  return (
-    <div className="app-layout">
-      <Sidebar />
-
-      <div className="main-area">
-        <Header />
-
-        <main className="content">
-          <h2>Dashboard</h2>
-
-          <p>Welcome to the Operational Audit Platform.</p>
-
-          {user && (
-            <p>
-              Logged in as: <strong>{user.role}</strong>
-            </p>
-          )}
-        </main>
-      </div>
-    </div>
-  );
-};
+import MainLayout from "./components/layout/MainLayout";
 
 const App = () => {
   return (
@@ -43,80 +21,26 @@ const App = () => {
       <Route path="/login" element={<Login />} />
 
       <Route
-        path="/dashboard"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <MainLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/audits" element={<Audits />} />
+        <Route path="/assignments" element={<Assignments />} />
+        <Route path="/checklists" element={<Checklists />} />
+        <Route path="/observations" element={<Observations />} />
+        <Route path="/findings" element={<Findings />} />
+        <Route path="/corrective-actions" element={<CorrectiveActions />} />
+        <Route path="/evidence" element={<Evidence />} />
+        <Route path="/verification" element={<Verification />} />
+        <Route path="/settings" element={<Settings />} />
+      </Route>
 
-      <Route
-        path="/audits"
-        element={
-          <ProtectedRoute>
-            <div className="app-layout">
-              <Sidebar />
-
-              <div className="main-area">
-                <Header />
-
-                <main className="content">
-                  <Audits />
-                </main>
-              </div>
-            </div>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/assignments"
-        element={
-          <ProtectedRoute>
-            <div className="app-layout">
-              <Sidebar />
-
-              <div className="main-area">
-                <Header />
-
-                <main className="content">
-                  <Assignments />
-                </main>
-              </div>
-            </div>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/checklists"
-        element={
-          <ProtectedRoute>
-            <div className="app-layout">
-              <Sidebar />
-
-              <div className="main-area">
-                <Header />
-
-                <main className="content">
-                  <Checklists />
-                </main>
-              </div>
-            </div>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/"
-        element={<Navigate to="/dashboard" replace />}
-      />
-
-      <Route
-        path="*"
-        element={<Navigate to="/dashboard" replace />}
-      />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 };
